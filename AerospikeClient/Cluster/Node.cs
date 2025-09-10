@@ -25,6 +25,7 @@ namespace Aerospike.Client
 	/// </summary>
 	public class Node : IDisposable
 	{
+		public static Version SERVER_VERSION_8_1_1 = new(8, 1, 1, 0);
 		public static Version SERVER_VERSION_8_1 = new(8, 1, 0, 0);
 		public static Version SERVER_VERSION_PSCAN = new(4, 9, 0, 3);
 		public static Version SERVER_VERSION_QUERY_SHOW = new(5, 7, 0, 0);
@@ -76,7 +77,7 @@ namespace Aerospike.Client
 		protected internal bool retryUserAgent;
 		protected internal volatile bool active = true;
 		private bool disposedValue;
-		public Version serverVerison;
+		public Version serverVersion;
 		internal Version clientVersion;
 
 		/// <summary>
@@ -101,7 +102,7 @@ namespace Aerospike.Client
 			this.nodeMaxErrorRate = cluster.maxErrorRate;
 			this.timeoutCounter = new Counter();
 			this.keyBusyCounter = new Counter();
-			this.serverVerison = nv.serverVersion;
+			this.serverVersion = nv.serverVersion;
 			this.clientVersion = new Version(cluster.client.clientVersion);
 
 			this.metricsEnabled = cluster.MetricsEnabled;
@@ -136,7 +137,7 @@ namespace Aerospike.Client
 
 		private void SendUserAgent()
 		{
-			if (serverVerison < SERVER_VERSION_8_1)
+			if (serverVersion < SERVER_VERSION_8_1)
 			{
 				retryUserAgent = false;
 				return;
