@@ -1,68 +1,58 @@
 name: Test
 
 inputs:
-  jfrog-tests-repo-name:
-    description: Where to download the test program from
-    required: false
-    default: database-generic-dev-local
-  registry-name:
-    type: string
-    required: false
-    description: Registry name
-    default: 'docker.io'
-  image-name:
-    type: string
-    required: false
-    description: Image name
-    default: 'aerospike/aerospike-server-enterprise'
   server-tag:
-    type: string
     required: false
-    default: 'latest'
-    description: 'Server docker image tag'
-  registry-username:
-    description: Required for using release candidates
+    default: latest
+    description: Server docker image tag
+  oidc-provider:
+    required: true
+    description: OIDC provider
+  oidc-audience:
+    required: true
+    description: OIDC audience
+  server-type:
+    required: true
+    description: Server type `aerospike-server` or `aerospike-server-enterprise`
+  strong-consistency:
     required: false
-  registry-password:
-    description: Required for using release candidates
+    default: "1"
+    description: Enable strong consistency (`1` or `0`)
+  server-image:
     required: false
+    default: ""
+    description: Custom full docker image name (overrides server-tag and server-type)
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Run EE server
       uses: ./.github/actions/run-ee-server
       with:
-        registry-name: ${{ inputs.registry-name }}
-        registry-username: ${{ inputs.registry-username}}
-        registry-password: ${{ inputs.registry-password}}
-        image-name: ${{ inputs.image-name }}
         server-tag: ${{ inputs.server-tag }}
-    - name: Setup JFrog CLI
-      id: setup-jfrog-cli
-      uses: jfrog/setup-jfrog-cli@v4.4.2
-      env:
-        JF_URL: https://aerospike.jfrog.io
+        server-type: ${{ inputs.server-type }}
+        server-image: ${{ inputs.server-image }}
+        oidc-provider: ${{ inputs.oidc-provider }}
+        oidc-audience: ${{ inputs.oidc-audience }}
+        strong-consistency: ${{ inputs.strong-consistency }}
+
+    - name: Download test artifacts
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
       with:
-        oidc-provider-name: gh-aerospike-clients
-        oidc-audience: aerospike/clients
-    
-    - name: Download Tests
-      shell: bash
-      run: |
-        jf rt dl ${{ inputs.jfrog-tests-repo-name }}/AerospikeTest-${{ github.run_number }}.zip --build-name=${{ github.repository }} --build-number=${{ github.run_number }} --flat 
-    
+        name: AerospikeTest-${{ github.run_number }}
+        path: artifacts
+
     - name: Unzip tests
       shell: bash
+      working-directory: artifacts
       run: unzip AerospikeTest*.zip
-    
+
     - name: Test
       shell: bash
-      run: dotnet exec ./publish/AerospikeTest.dll --settings ./.runsettings
-    
+      run: dotnet exec ./artifacts/publish/AerospikeTest.dll --settings ./.runsettings
+
     - name: Show logs if failed
       shell: bash
       if: ${{ failure() }}
       run: |
         docker container logs aerospike
-        cat ./configs/aerospike.conf
