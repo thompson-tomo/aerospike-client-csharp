@@ -1,5 +1,5 @@
-﻿/* 
- * Copyright 2012-2025 Aerospike, Inc.
+/* 
+ * Copyright 2012-2026 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements.
@@ -14,17 +14,25 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Aerospike.Client;
 using System.Reflection;
 using System.Text;
 
 namespace Aerospike.Test
 {
-	[TestClass, TestCategory("SCMode")]
+	[TestClass]
 	public class TestTxn : TestSync
 	{
 		private static readonly string binName = "bin";
+
+		[TestInitialize()]
+		public void CheckSCMode()
+		{
+			if (!SuiteHelpers.scMode)
+			{
+				Assert.Inconclusive("Strong consistency mode is required for transaction tests");
+			}
+		}
 
 		[ClassInitialize()]
 		public static void Prepare(TestContext testContext)
@@ -594,7 +602,7 @@ namespace Aerospike.Test
 		public void TxnLUTAbort() // Test Case 39
 		{
 			client.Truncate(null, SuiteHelpers.ns, SuiteHelpers.set, DateTime.Now);
-			
+
 			using Txn txn = new(); // T0
 
 			Key key1 = new(SuiteHelpers.ns, SuiteHelpers.set, "mrtkey20");
@@ -693,7 +701,7 @@ namespace Aerospike.Test
 			}
 			catch (AerospikeException ae)
 			{
-				if (!ae.Message.Contains("Command not allowed in current transaction state:"))
+				if (!ae.Message.Contains("Issuing commands to this transaction is forbidden"))
 				{
 					throw;
 				}
@@ -793,9 +801,10 @@ namespace Aerospike.Test
 
 			Txn txn = new();
 
-			wp = new() {
-			    Txn = txn,
-			    durableDelete = true,
+			wp = new()
+			{
+				Txn = txn,
+				durableDelete = true,
 			};
 			bool isDeleted = client.Delete(wp, key0);
 			Assert.IsFalse(isDeleted);

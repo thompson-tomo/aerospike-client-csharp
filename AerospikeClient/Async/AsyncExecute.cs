@@ -1,5 +1,5 @@
 /* 
- * Copyright 2012-2024 Aerospike, Inc.
+ * Copyright 2012-2025 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements.
@@ -14,8 +14,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
-using System;
 
 namespace Aerospike.Client
 {
@@ -111,7 +109,7 @@ namespace Aerospike.Client
 				Int32.TryParse(list[2].Trim(), out code);
 				message = list[0] + ':' + list[1] + ' ' + list[3];
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 				// Use generic exception if parse error occurs.
 				throw new AerospikeException(resultCode, ret);

@@ -1,5 +1,5 @@
 /* 
- * Copyright 2012-2024 Aerospike, Inc.
+ * Copyright 2012-2026 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements.
@@ -14,8 +14,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-using System.Collections.Generic;
-
 namespace Aerospike.Client
 {
 	/// <summary>
@@ -23,6 +21,13 @@ namespace Aerospike.Client
 	/// </summary>
 	public sealed class Role
 	{
+		/// <summary>
+		/// Unknown role from server.
+		/// This is used for forward compatibility when the server sends
+		/// role codes that are not yet known to this client version.
+		/// </summary>
+		public const string Unknown = "unknown";
+
 		/// <summary>
 		/// Manage users their roles.
 		/// </summary>
@@ -74,6 +79,21 @@ namespace Aerospike.Client
 		public const string Truncate = "truncate";
 
 		/// <summary>
+		/// Manage data masking.
+		/// </summary>
+		public const string MaskingAdmin = "masking-admin";
+
+		/// <summary>
+		/// Allow read masked data.
+		/// </summary>
+		public const string ReadMasked = "read-masked";
+
+		/// <summary>
+		/// Allow write masked data.
+		/// </summary>
+		public const string WriteMasked = "write-masked";
+
+		/// <summary>
 		/// Role name.
 		/// </summary>
 		public string name;
@@ -106,9 +126,10 @@ namespace Aerospike.Client
 			return name.Equals(ReadWrite) || name.Equals(ReadWriteUdf) || name.Equals(Read)
 				|| name.Equals(SysAdmin) || name.Equals(UserAdmin) || name.Equals(DataAdmin)
 				|| name.Equals(UDFAdmin) || name.Equals(SIndexAdmin)
-				|| name.Equals(Write) || name.Equals(Truncate);
+				|| name.Equals(Write) || name.Equals(Truncate)
+				|| name.Equals(MaskingAdmin) || name.Equals(ReadMasked) || name.Equals(WriteMasked);
 		}
-		
+
 		public override string ToString()
 		{
 			return "Role [name=" + name + ", privileges=" + privileges + ", whitelist=" + whitelist + ", readQuota=" + readQuota + ", writeQuota=" + writeQuota + "]";

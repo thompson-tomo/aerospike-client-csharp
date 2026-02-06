@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * Copyright 2012-2025 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
@@ -318,7 +318,7 @@ namespace Aerospike.Test
 			{
 				sendKey = true
 			};
-			
+
 			client.Put(wp, myKey, new Bin("name", "Andrew"));
 		}
 
@@ -426,7 +426,7 @@ namespace Aerospike.Test
 		[TestMethod]
 		public void BatchDeleteSingleNotFound()
 		{
-			Key[] keys = 
+			Key[] keys =
 			[
 				new(SuiteHelpers.ns, SuiteHelpers.set, 989299023) // Should be not found
 			];

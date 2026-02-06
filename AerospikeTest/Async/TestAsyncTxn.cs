@@ -1,5 +1,5 @@
-﻿/* 
- * Copyright 2012-2025 Aerospike, Inc.
+/* 
+ * Copyright 2012-2026 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements.
@@ -14,19 +14,27 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Aerospike.Client;
 using System.Reflection;
 using System.Text;
-using static Aerospike.Client.CommitStatus;
 using static Aerospike.Client.AbortStatus;
+using static Aerospike.Client.CommitStatus;
 
 namespace Aerospike.Test
 {
-	[TestClass, TestCategory("SCMode")]
+	[TestClass]
 	public class TestAsyncTxn : TestAsync
 	{
 		private static readonly string binName = "bin";
+
+		[TestInitialize()]
+		public void CheckSCMode()
+		{
+			if (!SuiteHelpers.scMode)
+			{
+				Assert.Inconclusive("Strong consistency mode is required for transaction tests");
+			}
+		}
 
 		[ClassInitialize()]
 		public static void Prepare(TestContext testContext)
@@ -42,7 +50,7 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnWrite");
 			using Txn txn = new();
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Put(txn, key, "val2"),
@@ -59,7 +67,7 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnWriteTwice");
 			using Txn txn = new();
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new Put(txn, key, "val1"),
 				new Put(txn, key, "val2"),
@@ -75,8 +83,8 @@ namespace Aerospike.Test
 		{
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnWriteBlock");
 			using Txn txn = new();
-			
-			var cmds = new IRunner[] 
+
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Put(txn, key, "val2"),
@@ -93,7 +101,7 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnWriteRead");
 			using Txn txn = new();
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Put(txn, key, "val2"),
@@ -111,7 +119,7 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnWriteAbort");
 			using Txn txn = new();
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Put(txn, key, "val2"),
@@ -129,7 +137,7 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnDelete");
 			using Txn txn = new();
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Delete(txn, key),
@@ -145,8 +153,8 @@ namespace Aerospike.Test
 		{
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnDeleteAbort");
 			using Txn txn = new();
-			
-			var cmds = new IRunner[] 
+
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Delete(txn, key),
@@ -163,7 +171,7 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnDeleteTwice");
 			using Txn txn = new();
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Delete(txn, key),
@@ -181,7 +189,7 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnTouch");
 			using Txn txn = new();
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Touch(txn, key),
@@ -197,8 +205,8 @@ namespace Aerospike.Test
 		{
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnTouchAbort");
 			using Txn txn = new();
-			
-			var cmds = new IRunner[] 
+
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, "val1"),
 				new Touch(txn, key),
@@ -216,7 +224,7 @@ namespace Aerospike.Test
 			using Txn txn = new();
 			Bin bin2 = new("bin2", "bal1");
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, new Bin(binName, "val1"), bin2),
 				new OperateExpect(txn, key,
@@ -237,8 +245,8 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnOperateWriteAbort");
 			using Txn txn = new();
 			Bin bin2 = new("bin2", "bal1");
-			
-			var cmds = new IRunner[] 
+
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, new Bin(binName, "val1"), bin2),
 				new OperateExpect(txn, key,
@@ -259,8 +267,8 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnUDF");
 			using Txn txn = new();
 			Bin bin2 = new("bin2", "bal1");
-			
-			var cmds = new IRunner[] 
+
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, new Bin(binName, "val1"), bin2),
 				new UDF(txn, key, "record_example", "writeBin", Value.Get(binName), Value.Get("val2")),
@@ -277,8 +285,8 @@ namespace Aerospike.Test
 			Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnUDFAbort");
 			using Txn txn = new();
 			Bin bin2 = new("bin2", "bal1");
-			
-			var cmds = new IRunner[] 
+
+			var cmds = new IRunner[]
 			{
 				new Put(null, key, new Bin(binName, "val1"), bin2),
 				new UDF(txn, key, "record_example", "writeBin", Value.Get(binName), Value.Get("val2")),
@@ -294,7 +302,7 @@ namespace Aerospike.Test
 		{
 			Key[] keys = new Key[10];
 			Bin bin = new(binName, 1);
-			
+
 			for (int i = 0; i < keys.Length; i++)
 			{
 				Key key = new(SuiteHelpers.ns, SuiteHelpers.set, "asyncTxnBatch" + i);
@@ -306,7 +314,7 @@ namespace Aerospike.Test
 			using Txn txn = new();
 			bin = new(binName, 2);
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new BatchGetExpect(null, keys, 1),
 				new BatchOperate(txn, keys, Operation.Put(bin)),
@@ -334,7 +342,7 @@ namespace Aerospike.Test
 			using Txn txn = new();
 			bin = new Bin(binName, 2);
 
-			var cmds = new IRunner[] 
+			var cmds = new IRunner[]
 			{
 				new BatchGetExpect(null, keys, 1),
 				new BatchOperate(txn, keys, Operation.Put(bin)),
@@ -431,14 +439,14 @@ namespace Aerospike.Test
 			Execute(cmds);
 		}
 
-		private void Execute(IRunner[] cmdArray) 
+		private void Execute(IRunner[] cmdArray)
 		{
 			Cmds a = new(this, cmdArray);
 			a.RunNext();
 			WaitTillComplete();
 		}
 
-		private void OnError(Exception e) 
+		private void OnError(Exception e)
 		{
 			SetError(e);
 			NotifyCompleted();
@@ -458,45 +466,45 @@ namespace Aerospike.Test
 			OnError(e);
 		}
 
-		private void OnError() 
+		private void OnError()
 		{
 			// Error is located in monitor instance which is checked in waitTillComplete();
 			NotifyCompleted();
 		}
 
-		private class Cmds(TestAsyncTxn parent, TestAsyncTxn.IRunner[] cmds) : IListener 
+		private class Cmds(TestAsyncTxn parent, TestAsyncTxn.IRunner[] cmds) : IListener
 		{
 			int idx = -1;
 
-			public void RunNext() 
+			public void RunNext()
 			{
-				if (++idx == cmds.Length) 
+				if (++idx == cmds.Length)
 				{
 					parent.NotifyCompleted();
 					return;
 				}
 
-				try 
+				try
 				{
 					cmds[idx].Run(parent, this);
 				}
-				catch (Exception e) 
+				catch (Exception e)
 				{
 					parent.OnError(e);
 				}
 			}
 
-			public void OnSuccess() 
+			public void OnSuccess()
 			{
 				RunNext();
 			}
 
-			public void OnFailure() 
+			public void OnFailure()
 			{
 				parent.OnError();
 			}
 
-			public void OnFailure(Exception e) 
+			public void OnFailure(Exception e)
 			{
 				parent.OnError(e);
 			}
@@ -512,7 +520,7 @@ namespace Aerospike.Test
 			private readonly Txn txn;
 			private readonly bool throwsCommitException;
 
-			public Commit(Txn txn) 
+			public Commit(Txn txn)
 			{
 				this.txn = txn;
 				this.throwsCommitException = false;
@@ -524,7 +532,7 @@ namespace Aerospike.Test
 				this.throwsCommitException = throwsCommitException;
 			}
 
-			public void Run(TestAsyncTxn parent, IListener listener) 
+			public void Run(TestAsyncTxn parent, IListener listener)
 			{
 				client.Commit(new CommitHandler(listener, throwsCommitException), txn);
 			}
@@ -548,21 +556,21 @@ namespace Aerospike.Test
 						listener.OnSuccess();
 						return;
 					}
-					
+
 					listener.OnFailure(e);
 				}
 			}
 		}
 
-		
 
-		public class Abort : IRunner 
+
+		public class Abort : IRunner
 		{
 			private readonly Txn txn;
 			private readonly AbortStatusType status;
 			private readonly int resultCode = 0;
 
-			public Abort(Txn txn) 
+			public Abort(Txn txn)
 			{
 				this.txn = txn;
 				this.status = AbortStatusType.OK;
@@ -580,7 +588,7 @@ namespace Aerospike.Test
 				this.resultCode = resultCode;
 			}
 
-			public void Run(TestAsyncTxn parent, IListener listener) 
+			public void Run(TestAsyncTxn parent, IListener listener)
 			{
 				try
 				{
@@ -591,7 +599,7 @@ namespace Aerospike.Test
 					parent.OnError(e, resultCode);
 				}
 			}
-			
+
 			private class AbortHandler(TestAsyncTxn.IListener listener, AbortStatus.AbortStatusType status) : AbortListener
 			{
 				private readonly AbortStatusType status = status;
@@ -696,7 +704,7 @@ namespace Aerospike.Test
 			{
 				Policy p = null;
 
-				if (txn != null) 
+				if (txn != null)
 				{
 					p = client.ReadPolicyDefault.Clone();
 					p.Txn = txn;
@@ -715,7 +723,7 @@ namespace Aerospike.Test
 							listener.OnFailure(new AssertFailedException("Expected generation: " + generation + " but got: " + record.generation));
 						}
 					}
-					
+
 					if (expect != null)
 					{
 						if (parent.AssertBinEqual(key, record, binName, expect))
@@ -753,7 +761,7 @@ namespace Aerospike.Test
 			{
 				WritePolicy wp = null;
 
-				if (txn != null) 
+				if (txn != null)
 				{
 					wp = client.WritePolicyDefault.Clone();
 					wp.Txn = txn;
@@ -808,12 +816,12 @@ namespace Aerospike.Test
 			{
 				WritePolicy wp = null;
 
-				if (txn != null) 
+				if (txn != null)
 				{
 					wp = client.WritePolicyDefault.Clone();
 					wp.Txn = txn;
 				}
-				client.Execute(wp, new UDFHandler(listener), key,  packageName, functionName, functionArgs);
+				client.Execute(wp, new UDFHandler(listener), key, packageName, functionName, functionArgs);
 			}
 
 			private class UDFHandler(TestAsyncTxn.IListener listener) : ExecuteListener
@@ -836,7 +844,8 @@ namespace Aerospike.Test
 			{
 				BatchPolicy bp = null;
 
-				if (txn != null) {
+				if (txn != null)
+				{
 					bp = client.BatchPolicyDefault.Clone();
 					bp.Txn = txn;
 				}
@@ -851,8 +860,8 @@ namespace Aerospike.Test
 					{
 						listener.OnSuccess();
 					}
-					else 
-					{ 
+					else
+					{
 						listener.OnFailure();
 					}
 				}
@@ -870,7 +879,7 @@ namespace Aerospike.Test
 			{
 				BatchPolicy bp = null;
 
-				if (txn != null) 
+				if (txn != null)
 				{
 					bp = client.BatchParentPolicyWriteDefault.Clone();
 					bp.Txn = txn;
@@ -921,7 +930,8 @@ namespace Aerospike.Test
 			{
 				WritePolicy wp = null;
 
-				if (txn != null) {
+				if (txn != null)
+				{
 					wp = client.WritePolicyDefault.Clone();
 					wp.Txn = txn;
 				}
@@ -948,7 +958,7 @@ namespace Aerospike.Test
 			{
 				WritePolicy wp = null;
 
-				if (txn != null) 
+				if (txn != null)
 				{
 					wp = client.WritePolicyDefault.Clone();
 					wp.Txn = txn;
@@ -980,12 +990,12 @@ namespace Aerospike.Test
 			}
 		}
 
-		public interface IRunner 
+		public interface IRunner
 		{
 			void Run(TestAsyncTxn parent, IListener listener);
 		}
 
-		public interface IListener 
+		public interface IListener
 		{
 			void OnSuccess();
 			void OnFailure();

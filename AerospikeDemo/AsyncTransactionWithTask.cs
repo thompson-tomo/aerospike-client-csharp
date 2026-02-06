@@ -15,19 +15,14 @@
  * the License.
  */
 using Aerospike.Client;
-using Neo.IronLua;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace Aerospike.Demo
 {
 	public class AsyncTransactionWithTask : AsyncExample
 	{
-		private bool completed;
-
 		public AsyncTransactionWithTask(Console console) : base(console)
 		{
 		}

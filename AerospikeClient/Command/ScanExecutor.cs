@@ -1,5 +1,5 @@
 /* 
- * Copyright 2012-2024 Aerospike, Inc.
+ * Copyright 2012-2025 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements.
@@ -14,10 +14,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-using System;
-using System.Collections.Generic;
-using System.Threading;
-
 namespace Aerospike.Client
 {
 	public sealed class ScanExecutor
@@ -25,7 +21,7 @@ namespace Aerospike.Client
 		public static void ScanPartitions(Cluster cluster, ScanPolicy policy, string ns, string setName, string[] binNames, ScanCallback callback, PartitionTracker tracker)
 		{
 			cluster.AddCommandCount();
-			
+
 			while (true)
 			{
 				ulong taskId = RandomShift.ThreadLocalInstance.NextLong();
@@ -59,7 +55,7 @@ namespace Aerospike.Client
 				{
 					tracker.PartitionError();
 					ae.Iteration = tracker.iteration;
-					throw ae;
+					throw;
 				}
 
 				if (tracker.IsClusterComplete(cluster, policy))

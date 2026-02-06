@@ -1,5 +1,5 @@
 /* 
- * Copyright 2012-2024 Aerospike, Inc.
+ * Copyright 2012-2025 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements.
@@ -14,8 +14,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-using System.Collections.Generic;
-
 namespace Aerospike.Client
 {
 	public sealed class QueryListenerExecutor
@@ -30,7 +28,7 @@ namespace Aerospike.Client
 		)
 		{
 			cluster.AddCommandCount();
-			
+
 			ulong taskId = statement.PrepareTaskId();
 
 			while (true)
@@ -64,7 +62,7 @@ namespace Aerospike.Client
 				{
 					tracker.PartitionError();
 					ae.Iteration = tracker.iteration;
-					throw ae;
+					throw;
 				}
 
 				if (tracker.IsClusterComplete(cluster, policy))

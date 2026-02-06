@@ -1,5 +1,5 @@
 /* 
- * Copyright 2012-2025 Aerospike, Inc.
+ * Copyright 2012-2026 Aerospike, Inc.
  *
  * Portions may be licensed to Aerospike, Inc. under one or more contributor
  * license agreements.
@@ -14,9 +14,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-using System;
-using System.Collections.Generic;
-
 namespace Aerospike.Client
 {
 	public class AdminCommand
@@ -147,7 +144,7 @@ namespace Aerospike.Client
 				dataOffset = 0;
 
 				byte[] token = null;
-				DateTime? ttl = null; 
+				DateTime? ttl = null;
 
 				for (int i = 0; i < fieldCount; i++)
 				{
@@ -237,11 +234,11 @@ namespace Aerospike.Client
 		{
 			// check server version
 			Node node = cluster.GetRandomNode();
-			if (node.serverVerison < Node.SERVER_VERSION_8_1)
+			if (node.serverVersion < Node.SERVER_VERSION_8_1)
 			{
-				throw new AerospikeException($"Node version {node.serverVerison} is less than required minimum version {Node.SERVER_VERSION_8_1}");
+				throw new AerospikeException($"Node version {node.serverVersion} is less than required minimum version {Node.SERVER_VERSION_8_1}");
 			}
-			
+
 			// nopassword is a special keyword used by server versions 8.1+ to indicate that password
 			// authentication is not allowed.
 			var hash = AdminCommand.HashPassword("nopassword");
@@ -358,7 +355,7 @@ namespace Aerospike.Client
 			}
 			ExecuteCommand(cluster, policy);
 		}
-		
+
 		public void DropRole(Cluster cluster, AdminPolicy policy, string roleName)
 		{
 			WriteHeader(DROP_ROLE, 1);
@@ -437,7 +434,7 @@ namespace Aerospike.Client
 					if (!(privilege.setName == null || privilege.setName.Length == 0) &&
 						(privilege.ns == null || privilege.ns.Length == 0))
 					{
-						throw new AerospikeException(ResultCode.INVALID_PRIVILEGE, "Admin privilege '" + 
+						throw new AerospikeException(ResultCode.INVALID_PRIVILEGE, "Admin privilege '" +
 							privilege.PrivilegeCodeToString() + "' has a set scope with an empty namespace.");
 					}
 
@@ -451,8 +448,8 @@ namespace Aerospike.Client
 				}
 				else
 				{
-					if (! (privilege.ns == null || privilege.ns.Length == 0) ||
-						! (privilege.setName == null || privilege.setName.Length == 0))
+					if (!(privilege.ns == null || privilege.ns.Length == 0) ||
+						!(privilege.setName == null || privilege.setName.Length == 0))
 					{
 						throw new AerospikeException(ResultCode.INVALID_PRIVILEGE, "Admin global privilege '" +
 							privilege.PrivilegeCodeToString() + "' has namespace/set scope which is invalid.");
@@ -487,7 +484,7 @@ namespace Aerospike.Client
 			WriteFieldHeader(WHITELIST, size);
 			dataOffset = offset;
 		}
-		
+
 		private void WriteSize()
 		{
 			// Write total size of message which is the current offset.
