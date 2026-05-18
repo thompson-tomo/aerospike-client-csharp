@@ -10,6 +10,7 @@ permissions:
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   resolve-release:
@@ -33,7 +34,7 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        git fetch --no-tags --depth=0 origin stage
+        git fetch --no-tags origin stage:refs/remotes/origin/stage
         target=$(git merge-base HEAD origin/stage)
         echo "Release target SHA: $target"
         echo "sha=$target" >> "$GITHUB_OUTPUT"
@@ -42,9 +43,9 @@ jobs:
       id: get-version
       shell: pwsh
       run: |
-        $projectXml = git show "${{ steps.target.outputs.sha }}:AerospikeClient/AerospikeClient.csproj"
-        [xml]$project = $projectXml
-        $version = $project.Project.PropertyGroup.Version | Select-Object -First 1
+        $projectXml = (git show "${{ steps.target.outputs.sha }}:AerospikeClient/AerospikeClient.csproj") -join "`n"
+        $versionMatch = [regex]::Match($projectXml, '<Version>\s*([^<]+?)\s*</Version>')
+        $version = $versionMatch.Groups[1].Value
         if (-not $version) {
           Write-Error "Could not read <Version> from AerospikeClient/AerospikeClient.csproj at ${{ steps.target.outputs.sha }}"
           exit 1
