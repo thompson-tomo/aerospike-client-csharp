@@ -10,6 +10,7 @@ permissions:
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   resolve-release:
@@ -19,7 +20,7 @@ jobs:
       version: ${{ steps.get-version.outputs.version }}
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
       with:
         egress-policy: audit
 
@@ -33,7 +34,7 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        git fetch --no-tags --depth=0 origin stage
+        git fetch --no-tags origin stage:refs/remotes/origin/stage
         target=$(git merge-base HEAD origin/stage)
         echo "Release target SHA: $target"
         echo "sha=$target" >> "$GITHUB_OUTPUT"
@@ -42,9 +43,9 @@ jobs:
       id: get-version
       shell: pwsh
       run: |
-        $projectXml = git show "${{ steps.target.outputs.sha }}:AerospikeClient/AerospikeClient.csproj"
-        [xml]$project = $projectXml
-        $version = $project.Project.PropertyGroup.Version | Select-Object -First 1
+        $projectXml = (git show "${{ steps.target.outputs.sha }}:AerospikeClient/AerospikeClient.csproj") -join "`n"
+        $versionMatch = [regex]::Match($projectXml, '<Version>\s*([^<]+?)\s*</Version>')
+        $version = $versionMatch.Groups[1].Value
         if (-not $version) {
           Write-Error "Could not read <Version> from AerospikeClient/AerospikeClient.csproj at ${{ steps.target.outputs.sha }}"
           exit 1
@@ -57,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
       with:
         egress-policy: audit
 
@@ -80,7 +81,7 @@ jobs:
     - name: Generate API documentation
       run: docfx docfx.json
     - name: Upload API docs artifact
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: api-docs-${{ needs.resolve-release.outputs.version }}
         path: _site
@@ -100,7 +101,7 @@ jobs:
       contents: write
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
       with:
         egress-policy: audit
 

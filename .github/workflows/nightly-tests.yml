@@ -18,11 +18,13 @@ jobs:
       servers: ${{ steps.servers.outputs.servers }}
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
       with:
         egress-policy: audit
 
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: stage
 
     - name: Load nightly server matrix
       id: servers
@@ -36,11 +38,13 @@ jobs:
       version: ${{ steps.get-version.outputs.version }}
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
       with:
         egress-policy: audit
 
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: stage
     - name: Setup .NET
       uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
       with:
@@ -70,15 +74,20 @@ jobs:
           - server:
               server-type: aerospike-server
             strong-consistency: "1"
+          - server:
+              server-type: aerospike-server
+              tls: true
     name: test-${{ matrix.server.server-tag }}-${{ matrix.server.server-type }}-sc${{ matrix.strong-consistency }}-tls${{ matrix.server.tls }}
     runs-on: ubuntu-latest
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
       with:
         egress-policy: audit
 
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: stage
     - name: Test
       uses: ./.github/actions/test
       with:
@@ -87,14 +96,21 @@ jobs:
         server-container-repo: ${{ matrix.server.server-container-repo }}
         strong-consistency: ${{ matrix.strong-consistency }}
         enable-tls: ${{ matrix.server.tls }}
-        features-content: ${{ secrets.AES_FEATURES_CONF }}
+        features-content: ${{ matrix.server.server-type == 'aerospike-server-enterprise' && secrets.AES_FEATURES_CONF || '' }}
         oidc-provider: gh-aerospike
         oidc-audience: aerospike
         artifact-suffix: ${{ matrix.server.server-tag }}-${{ matrix.server.server-type }}-sc${{ matrix.strong-consistency }}-tls${{ matrix.server.tls }}
 
     - name: Publish test results
       if: ${{ !cancelled() }}
-      uses: EnricoMi/publish-unit-test-result-action@3a74b2957438d0b6e2e61d67b05318aa25c9e6c6 # v2.20.0
+      uses: step-security/publish-unit-test-result-action@681100d67b09305624c089873f12c545ee7cbc24 # v2.23.0
       with:
         files: test-results/**/*.trx
         check_name: "Nightly - ${{ matrix.server.server-tag }} (${{ matrix.server.server-type }}, SC=${{ matrix.strong-consistency }}, TLS=${{ matrix.server.tls }})"
+
+    - name: Publish example run results
+      if: ${{ !cancelled() && hashFiles('example-results/**/*.trx') != '' }}
+      uses: step-security/publish-unit-test-result-action@681100d67b09305624c089873f12c545ee7cbc24 # v2.23.0
+      with:
+        files: example-results/**/*.trx
+        check_name: "Nightly Examples - ${{ matrix.server.server-tag }} (${{ matrix.server.server-type }}, SC=${{ matrix.strong-consistency }}, TLS=${{ matrix.server.tls }})"

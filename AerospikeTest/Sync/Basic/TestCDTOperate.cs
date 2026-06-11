@@ -2904,7 +2904,7 @@ namespace Aerospike.Test
 			{
 				client.Delete(null, rkey);
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 			}
 
@@ -3023,6 +3023,24 @@ namespace Aerospike.Test
 			// The result depends on which entry is at index 0 and whether it passes the filter.
 			// If it passes, we get 2 elements (key+value); if not, 0 elements.
 			Assert.IsTrue(resultList.Count == 0 || resultList.Count == 2);
+		}
+
+		[TestMethod]
+		public void TestPutNullSlotInValueArrayThrowsSerialize()
+		{
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, "nullValueArraySlot");
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			Value[] arr = [Value.Get("a"), null];
+
+			Assert.Throws<NullReferenceException>(
+				() => client.Put(null, rkey, new Bin(binName, Value.Get(arr))));
 		}
 
 		[TestMethod]
@@ -3207,6 +3225,41 @@ namespace Aerospike.Test
 			List<object> values = (List<object>)result.GetList(binName);
 			Assert.IsNotNull(values);
 			Assert.AreEqual(0, values.Count);
+		}
+
+		[TestMethod]
+		public void TestMapKeysInValueVarargsNullArrayUsesNullValueAndServerRejects()
+		{
+			CheckPathExpressionEnhancements();
+
+			CTX ctx = CTX.MapKeysIn((Value[])null);
+			Assert.AreEqual(Value.NullValue.Instance, ctx.value);
+
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, "mkNullValueKeysArray");
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			Dictionary<string, object> map = new()
+			{
+				{ "a", 1 }
+			};
+			client.Put(null, rkey, new Bin(binName, map));
+
+			try
+			{
+				client.Operate(null, rkey,
+					CDTOperation.SelectByPath(binName, SelectFlag.VALUE, ctx));
+				Assert.Fail("operate should fail: nil is not a valid mapKeysIn key list");
+			}
+			catch (AerospikeException e)
+			{
+				Assert.AreEqual(ResultCode.PARAMETER_ERROR, e.Result);
+			}
 		}
 
 		// ---- MK-004: Empty map ----
@@ -3430,6 +3483,154 @@ namespace Aerospike.Test
 			Assert.AreEqual(2, values.Count);
 			Assert.IsTrue(values.Contains(1L));
 			Assert.IsTrue(values.Contains(3L));
+		}
+
+		[TestMethod]
+		public void TestMapKeysInIntVarargsSelectsLongKeys()
+		{
+			CheckPathExpressionEnhancements();
+
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, "mk4752IntAsInt");
+
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			Dictionary<long, string> map = new()
+			{
+				{ 1L, "one" },
+				{ 2L, "two" },
+				{ 3L, "three" }
+			};
+			client.Put(null, rkey, new Bin(binName, map));
+
+			CTX ctxInt = CTX.MapKeysIn(1, 2);
+			Record intResult = client.Operate(null, rkey,
+				CDTOperation.SelectByPath(binName, SelectFlag.VALUE, ctxInt));
+
+			Assert.IsNotNull(intResult);
+			List<object> intValues = (List<object>)intResult.GetList(binName);
+			Assert.IsNotNull(intValues);
+			Assert.AreEqual(2, intValues.Count);
+			Assert.IsTrue(intValues.Contains("one"));
+			Assert.IsTrue(intValues.Contains("two"));
+		}
+
+		[TestMethod]
+		public void TestMapKeysInShortVarargsMatchesIntegerKeys()
+		{
+			CheckPathExpressionEnhancements();
+
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, "mk4752ShortAsInt");
+
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			Dictionary<long, string> map = new()
+			{
+				{ 1L, "one" },
+				{ 2L, "two" },
+				{ 3L, "three" }
+			};
+			client.Put(null, rkey, new Bin(binName, map));
+
+			CTX ctx = CTX.MapKeysIn((short)1, (short)2);
+			Record result = client.Operate(null, rkey,
+				CDTOperation.SelectByPath(binName, SelectFlag.VALUE, ctx));
+
+			Assert.IsNotNull(result);
+			List<object> values = (List<object>)result.GetList(binName);
+			Assert.IsNotNull(values);
+			Assert.AreEqual(2, values.Count);
+			Assert.IsTrue(values.Contains("one"));
+			Assert.IsTrue(values.Contains("two"));
+		}
+
+		[TestMethod]
+		public void TestMapKeysInByteVarargsDoesNotSelectBlobKeyedEntries()
+		{
+			CheckPathExpressionEnhancements();
+
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, "mk4752BlobKeys");
+
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			byte[] blobKey1 = [0x10, 0x20];
+			byte[] blobKey2 = [0x30, 0x40];
+
+			Dictionary<Value, Value> map = new()
+			{
+				{ Value.Get(blobKey1), Value.Get("blobValA") },
+				{ Value.Get(blobKey2), Value.Get("blobValB") }
+			};
+			client.Put(null, rkey, new Bin(binName, map));
+
+			client.Operate(null, rkey,
+				MapOperation.PutItems(MapPolicy.Default, binName, map));
+
+			CTX ctx = CTX.MapKeysIn((byte)0x10, (byte)0x30);
+			Record result = client.Operate(null, rkey,
+				CDTOperation.SelectByPath(binName, SelectFlag.VALUE, ctx));
+
+			Assert.IsNotNull(result);
+			List<object> values = (List<object>)result.GetList(binName);
+			Assert.IsNotNull(values);
+			Assert.AreEqual(0, values.Count);
+		}
+
+		[TestMethod]
+		public void TestMapKeysInValueVarargsMixedKeys()
+		{
+			CheckPathExpressionEnhancements();
+
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, "mk4752ValueMixed");
+
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			byte[] blobKey = new byte[] { 7, 8, 9 };
+			Dictionary<Value, Value> map = new()
+			{
+				{ Value.Get("sk"), Value.Get("vStr") },
+				{ Value.Get(42L), Value.Get("vInt") },
+				{ Value.Get(blobKey), Value.Get("vBlob") }
+			};
+			client.Put(null, rkey, new Bin(binName, map));
+
+			client.Operate(null, rkey,
+				MapOperation.PutItems(MapPolicy.Default, binName, map));
+
+			CTX ctx = CTX.MapKeysIn(Value.Get("sk"), Value.Get(42L), Value.Get(blobKey));
+			Record result = client.Operate(null, rkey,
+				CDTOperation.SelectByPath(binName, SelectFlag.VALUE, ctx));
+
+			Assert.IsNotNull(result);
+			List<object> values = (List<object>)result.GetList(binName);
+			Assert.IsNotNull(values);
+			Assert.AreEqual(3, values.Count);
+			Assert.IsTrue(values.Contains("vStr"));
+			Assert.IsTrue(values.Contains("vInt"));
+			Assert.IsTrue(values.Contains("vBlob"));
 		}
 
 		// ---- MV-001: Basic mapValues - extract all values from a map ----
@@ -3715,6 +3916,191 @@ namespace Aerospike.Test
 
 			Assert.IsNotNull(result);
 			Assert.IsTrue(result.GetBool("sizeCheck"));
+		}
+
+		[TestMethod]
+		public void TestAllChildrenWithFilterUsingExpression()
+		{
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, 262);
+
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			List<Dictionary<string, object>> booksList = [];
+
+			Dictionary<string, object> book1 = new()
+			{
+				{ "title", "Cheap Book 1" },
+				{ "price", 7.99 }
+			};
+			booksList.Add(book1);
+
+			Dictionary<string, object> book2 = new()
+			{
+				{ "title", "Expensive Book" },
+				{ "price", 25.99 }
+			};
+			booksList.Add(book2);
+
+			Dictionary<string, object> book3 = new()
+			{
+				{ "title", "Cheap Book 2" },
+				{ "price", 9.99 }
+			};
+			booksList.Add(book3);
+
+			Dictionary<string, object> rootMap = new()
+			{
+				{ "book", booksList }
+			};
+
+			Bin bin = new Bin(binName, rootMap);
+			client.Put(null, rkey, bin);
+
+			Record record = client.Get(null, rkey);
+			Assert.IsNotNull(record);
+
+			// Build expression first, then pass to AllChildrenWithFilter
+			Expression filterExpression = Exp.Build(
+				Exp.LE(
+					MapExp.GetByKey(MapReturnType.VALUE, Exp.Type.FLOAT,
+						Exp.Val("price"), Exp.MapLoopVar(LoopVarPart.VALUE)),
+					Exp.Val(10.0)
+				)
+			);
+
+			CTX ctx1 = CTX.MapKey(Value.Get("book"));
+			CTX ctx2 = CTX.AllChildrenWithFilter(filterExpression); // using expression variant
+			CTX ctx3 = CTX.AllChildrenWithFilter(
+				Exp.EQ(Exp.StringLoopVar(LoopVarPart.MAP_KEY), Exp.Val("title"))
+			);
+
+			Operation selectOp = CDTOperation.SelectByPath(binName, SelectFlag.VALUE, ctx1, ctx2, ctx3);
+
+			Record result = client.Operate(null, rkey, selectOp);
+			Assert.IsNotNull(result);
+
+			List<object> results = (List<object>)result.GetList(binName);
+			Assert.IsNotNull(results);
+			Assert.AreEqual(2, results.Count);
+
+			List<string> titles = [];
+			foreach (object item in results)
+			{
+				Assert.IsInstanceOfType(item, typeof(string));
+				titles.Add((string)item);
+			}
+
+			Assert.IsTrue(titles.Contains("Cheap Book 1"));
+			Assert.IsTrue(titles.Contains("Cheap Book 2"));
+		}
+
+		[TestMethod]
+		public void TestAllChildrenWithFilterNullExp()
+		{
+			try
+			{
+				Exp nullExp = null;
+				CTX.AllChildrenWithFilter(nullExp);
+				Assert.Fail("Should throw NullReferenceException when Exp is null");
+			}
+			catch (NullReferenceException)
+			{
+				// Expected - Exp.Build() will throw NRE when trying to pack a null expression
+			}
+		}
+
+		[TestMethod]
+		public void TestAllChildrenWithFilterNullExpression()
+		{
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, 263);
+
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			Dictionary<string, object> data = new()
+			{
+				{ "items", new List<int> { 10, 20 } }
+			};
+			Bin bin = new Bin(binName, data);
+			client.Put(null, rkey, bin);
+
+			try
+			{
+				Expression nullExpression = null;
+				CTX ctx1 = CTX.MapKey(Value.Get("items"));
+				CTX ctx2 = CTX.AllChildrenWithFilter(nullExpression); // Passing null expression
+
+				Operation selectOp = CDTOperation.SelectByPath(binName, SelectFlag.VALUE, ctx1, ctx2);
+				client.Operate(null, rkey, selectOp);
+
+				// The operation construction should fail or the server should reject it
+				// This tests that null expressions are not silently accepted
+				Assert.Fail("Should handle null Expression appropriately");
+			}
+			catch (NullReferenceException)
+			{
+				// Expected - null expression should cause error
+			}
+			catch (AerospikeException)
+			{
+			}
+		}
+
+		[TestMethod]
+		public void TestAllChildrenWithExpressionVariant()
+		{
+			Key rkey = new Key(SuiteHelpers.ns, SuiteHelpers.set, 264);
+
+			try
+			{
+				client.Delete(null, rkey);
+			}
+			catch (Exception)
+			{
+			}
+
+			Dictionary<string, object> products = new()
+			{
+				{ "item1", 100 },
+				{ "item2", 50 },
+				{ "item3", 150 }
+			};
+
+			Dictionary<string, object> data = new()
+			{
+				{ "products", products }
+			};
+
+			Bin bin = new Bin(binName, data);
+			client.Put(null, rkey, bin);
+
+			// Create expression outside of CTX constructor
+			Expression filterExpression = Exp.Build(
+				Exp.GT(Exp.IntLoopVar(LoopVarPart.VALUE), Exp.Val(75))
+			);
+
+			CTX ctx1 = CTX.MapKey(Value.Get("products"));
+			CTX ctx2 = CTX.AllChildrenWithFilter(filterExpression); // using bre-built expression
+
+			Operation selectOp = CDTOperation.SelectByPath(binName, SelectFlag.VALUE, ctx1, ctx2);
+
+			Record result = client.Operate(null, rkey, selectOp);
+			Assert.IsNotNull(result);
+
+			List<object> results = (List<object>)result.GetList(binName);
+			Assert.IsNotNull(results);
+			Assert.AreEqual(2, results.Count);
 		}
 
 		private static void CheckPathExpressionEnhancements()
